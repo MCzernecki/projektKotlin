@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import com.example.projektandroid.ui.AppStep
 import com.example.projektandroid.ui.AttendanceScreen
 import com.example.projektandroid.ui.AttendanceViewModel
+import com.example.projektandroid.ui.StationSelectionScreen
+import com.example.projektandroid.ui.StudentGradingScreen
 import com.example.projektandroid.ui.TaskConfigurationScreen
 import com.example.projektandroid.ui.theme.ProjektAndroidTheme
 
@@ -33,6 +35,10 @@ class MainActivity : ComponentActivity() {
                             AppStep.ATTENDANCE -> AttendanceScreen(attendanceViewModel)
                             AppStep.TASK_CONFIGURATION ->
                                 TaskConfigurationScreen(attendanceViewModel)
+                            AppStep.STATION_SELECTION ->
+                                StationSelectionScreen(attendanceViewModel)
+                            AppStep.STUDENT_GRADING ->
+                                StudentGradingScreen(attendanceViewModel)
                         }
                     }
                 }

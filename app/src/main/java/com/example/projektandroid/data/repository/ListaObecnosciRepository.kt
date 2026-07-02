@@ -100,9 +100,11 @@ class ListaObecnosciRepository {
         studentId: Long,
         wykonaneZadania: List<ZadanieLaboratoryjne>
     ): ValidationResult {
-        val validationResult = validateZadania(wykonaneZadania)
-        if (!validationResult.isValid) {
-            return validationResult
+        if (wykonaneZadania.isNotEmpty()) {
+            val validationResult = validateZadania(wykonaneZadania)
+            if (!validationResult.isValid) {
+                return validationResult
+            }
         }
 
         return updateStudent(studentId) { student ->

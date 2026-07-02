@@ -3,6 +3,7 @@ package com.example.projektandroid.ui
 import androidx.lifecycle.ViewModel
 import com.example.projektandroid.data.model.GradingThreshold
 import com.example.projektandroid.data.model.Student
+import com.example.projektandroid.data.model.ZadanieLaboratoryjne
 import com.example.projektandroid.data.repository.GradeConfigurator
 import com.example.projektandroid.data.repository.ListaObecnosciRepository
 import com.example.projektandroid.data.validation.ValidationResult
@@ -31,6 +32,20 @@ class AttendanceViewModel(
     private val _gradingConfiguration = MutableStateFlow(GradingConfigurationState())
     val gradingConfiguration: StateFlow<GradingConfigurationState> =
         _gradingConfiguration.asStateFlow()
+
+    private val _selectedStationNumber = MutableStateFlow<Int?>(null)
+    val selectedStationNumber: StateFlow<Int?> = _selectedStationNumber.asStateFlow()
+
+    private val _selectedStationStudents = MutableStateFlow<List<Student>>(emptyList())
+    val selectedStationStudents: StateFlow<List<Student>> =
+        _selectedStationStudents.asStateFlow()
+
+    private val _configuredTaskNumbers = MutableStateFlow<List<Int>>(emptyList())
+    val configuredTaskNumbers: StateFlow<List<Int>> =
+        _configuredTaskNumbers.asStateFlow()
+
+    private val _gradingMessages = MutableStateFlow<Map<Long, String>>(emptyMap())
+    val gradingMessages: StateFlow<Map<Long, String>> = _gradingMessages.asStateFlow()
 
     init {
         refreshList()
@@ -117,19 +132,123 @@ class AttendanceViewModel(
             thresholds += GradingThreshold(requiredTasks = requiredTasks, grade = grade)
         }
 
-        val result = gradeConfigurator.setConfiguration(totalTasks, thresholds)
-        _gradingConfiguration.value = when (result) {
-            ValidationResult.Success -> state.copy(errorMessage = null, isSaved = true)
-            is ValidationResult.Error -> state.copy(
-                errorMessage = translateConfigurationError(result.message),
+        val configurationResult = gradeConfigurator.setConfiguration(totalTasks, thresholds)
+        if (configurationResult is ValidationResult.Error) {
+            _gradingConfiguration.value = state.copy(
+                errorMessage = translateConfigurationError(configurationResult.message),
                 isSaved = false
             )
+            return configurationResult
+        }
+
+        val tasks = (1..totalTasks).map { taskNumber ->
+            ZadanieLaboratoryjne(numerZadania = taskNumber, ocena = MIN_GRADE.toInt())
+        }
+        val tasksResult = repository.ustawListeZadan(tasks)
+        if (tasksResult is ValidationResult.Error) {
+            _gradingConfiguration.value = state.copy(
+                errorMessage = tasksResult.message,
+                isSaved = false
+            )
+            return tasksResult
+        }
+
+        _configuredTaskNumbers.value = tasks.map { it.numerZadania }
+        _gradingConfiguration.value = state.copy(errorMessage = null, isSaved = true)
+        _currentStep.value = AppStep.STATION_SELECTION
+        return ValidationResult.Success
+    }
+
+    fun selectStation(stationNumber: Int): ValidationResult {
+        if (stationNumber !in MIN_STATION..MAX_STATION) {
+            return ValidationResult.Error("Numer stanowiska musi byc w zakresie 1-10.")
+        }
+
+        _selectedStationNumber.value = stationNumber
+        refreshSelectedStationStudents()
+        _gradingMessages.value = emptyMap()
+        _currentStep.value = AppStep.STUDENT_GRADING
+        return ValidationResult.Success
+    }
+
+    fun toggleStudentTask(studentId: Int, taskNumber: Int): ValidationResult {
+        if (taskNumber !in _configuredTaskNumbers.value) {
+            return ValidationResult.Error("Nie znaleziono zadania o numerze $taskNumber.")
+        }
+
+        val student = repository.pobierzWszystkichStudentow()
+            .firstOrNull { it.id == studentId.toLong() }
+            ?: return ValidationResult.Error("Nie znaleziono studenta o id: $studentId.")
+        val configuredTask = repository.pobierzListeZadan()
+            .first { it.numerZadania == taskNumber }
+        val isCompleted = student.wykonaneZadania.any { it.numerZadania == taskNumber }
+        val updatedTasks = if (isCompleted) {
+            student.wykonaneZadania.filterNot { it.numerZadania == taskNumber }
+        } else {
+            (student.wykonaneZadania + configuredTask).sortedBy { it.numerZadania }
+        }
+
+        val result = repository.przypiszWykonaneZadania(student.id, updatedTasks)
+        if (result is ValidationResult.Success) {
+            refreshList()
+            refreshSelectedStationStudents()
+            clearGradingMessage(student.id)
         }
         return result
     }
 
+    fun getSuggestedGrade(studentId: Int): Double {
+        val student = repository.pobierzWszystkichStudentow()
+            .firstOrNull { it.id == studentId.toLong() }
+            ?: return MIN_GRADE
+        return gradeConfigurator.getSuggestedGrade(student.wykonaneZadania.size)
+    }
+
+    fun saveStudentGrade(studentId: Int, grade: Double): ValidationResult {
+        if (grade !in MIN_GRADE..MAX_GRADE) {
+            val result = ValidationResult.Error("Ocena musi byc w zakresie 2.0-5.0.")
+            setGradingMessage(studentId.toLong(), result.message)
+            return result
+        }
+
+        val result = repository.ustawOceneKoncowa(studentId.toLong(), grade)
+        when (result) {
+            ValidationResult.Success -> {
+                refreshList()
+                refreshSelectedStationStudents()
+                setGradingMessage(studentId.toLong(), "Ocena zostala zapisana.")
+            }
+            is ValidationResult.Error -> setGradingMessage(studentId.toLong(), result.message)
+        }
+        return result
+    }
+
+    fun returnToStationSelection() {
+        _selectedStationNumber.value = null
+        _selectedStationStudents.value = emptyList()
+        _gradingMessages.value = emptyMap()
+        _currentStep.value = AppStep.STATION_SELECTION
+    }
+
     private fun refreshList() {
         _studentsList.value = repository.pobierzWszystkichStudentow()
+    }
+
+    private fun refreshSelectedStationStudents() {
+        val stationNumber = _selectedStationNumber.value
+        _selectedStationStudents.value = if (stationNumber == null) {
+            emptyList()
+        } else {
+            repository.pobierzStudentowZeStanowiska(stationNumber)
+        }
+    }
+
+    private fun setGradingMessage(studentId: Long, message: String) {
+        _gradingMessages.value = _gradingMessages.value + (studentId to message)
+    }
+
+    private fun clearGradingMessage(studentId: Long) {
+        _gradingMessages.value = _gradingMessages.value - studentId
     }
 
     private fun updateGradingState(
@@ -162,5 +281,12 @@ class AttendanceViewModel(
             message.startsWith("Grade must") -> "Ocena musi byc w zakresie 2.0-5.0."
             else -> message
         }
+    }
+
+    companion object {
+        private const val MIN_STATION = 1
+        private const val MAX_STATION = 10
+        private const val MIN_GRADE = 2.0
+        private const val MAX_GRADE = 5.0
     }
 }

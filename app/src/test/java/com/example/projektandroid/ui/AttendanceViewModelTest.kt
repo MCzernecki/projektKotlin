@@ -122,4 +122,128 @@ class AttendanceViewModelTest {
         assertTrue(viewModel.gradingConfiguration.value.errorMessage != null)
         assertEquals(0, configurator.getTotalTasks())
     }
+
+    @Test
+    fun `selectStation sets station and loads its students`() {
+        viewModel.addStudent("7", "Jan", "Kowalski")
+        configureThreeTasks()
+
+        val result = viewModel.selectStation(7)
+
+        assertTrue(result is ValidationResult.Success)
+        assertEquals(7, viewModel.selectedStationNumber.value)
+        assertEquals(AppStep.STUDENT_GRADING, viewModel.currentStep.value)
+        assertEquals(1, viewModel.selectedStationStudents.value.size)
+    }
+
+    @Test
+    fun `selectStation rejects number outside allowed range`() {
+        configureThreeTasks()
+
+        val result = viewModel.selectStation(11)
+
+        assertTrue(result is ValidationResult.Error)
+        assertEquals(null, viewModel.selectedStationNumber.value)
+        assertEquals(AppStep.STATION_SELECTION, viewModel.currentStep.value)
+    }
+
+    @Test
+    fun `toggleStudentTask adds completed task`() {
+        prepareStudentForGrading()
+
+        val result = viewModel.toggleStudentTask(studentId = 1, taskNumber = 1)
+
+        assertTrue(result is ValidationResult.Success)
+        assertEquals(
+            listOf(1),
+            viewModel.selectedStationStudents.value.first()
+                .wykonaneZadania.map { it.numerZadania }
+        )
+    }
+
+    @Test
+    fun `toggleStudentTask removes task after second toggle`() {
+        prepareStudentForGrading()
+        viewModel.toggleStudentTask(studentId = 1, taskNumber = 1)
+
+        val result = viewModel.toggleStudentTask(studentId = 1, taskNumber = 1)
+
+        assertTrue(result is ValidationResult.Success)
+        assertTrue(
+            viewModel.selectedStationStudents.value.first().wykonaneZadania.isEmpty()
+        )
+    }
+
+    @Test
+    fun `suggested grade changes when tasks are toggled`() {
+        prepareStudentForGrading()
+        assertEquals(2.0, viewModel.getSuggestedGrade(1), 0.0)
+
+        viewModel.toggleStudentTask(studentId = 1, taskNumber = 1)
+        assertEquals(3.0, viewModel.getSuggestedGrade(1), 0.0)
+
+        viewModel.toggleStudentTask(studentId = 1, taskNumber = 2)
+        assertEquals(4.0, viewModel.getSuggestedGrade(1), 0.0)
+        assertEquals(
+            null,
+            viewModel.selectedStationStudents.value.first().ocenaKoncowa
+        )
+    }
+
+    @Test
+    fun `saveStudentGrade stores valid grade`() {
+        prepareStudentForGrading()
+
+        val result = viewModel.saveStudentGrade(studentId = 1, grade = 4.5)
+
+        assertTrue(result is ValidationResult.Success)
+        assertEquals(
+            4.5,
+            viewModel.selectedStationStudents.value.first().ocenaKoncowa!!,
+            0.0
+        )
+        assertTrue(viewModel.gradingMessages.value[1L] != null)
+    }
+
+    @Test
+    fun `saveStudentGrade rejects grade outside allowed range`() {
+        prepareStudentForGrading()
+
+        val result = viewModel.saveStudentGrade(studentId = 1, grade = 5.5)
+
+        assertTrue(result is ValidationResult.Error)
+        assertEquals(
+            null,
+            viewModel.selectedStationStudents.value.first().ocenaKoncowa
+        )
+        assertTrue(viewModel.gradingMessages.value[1L] != null)
+    }
+
+    @Test
+    fun `returnToStationSelection returns from student grading`() {
+        prepareStudentForGrading()
+
+        viewModel.returnToStationSelection()
+
+        assertEquals(AppStep.STATION_SELECTION, viewModel.currentStep.value)
+        assertEquals(null, viewModel.selectedStationNumber.value)
+        assertTrue(viewModel.selectedStationStudents.value.isEmpty())
+    }
+
+    private fun prepareStudentForGrading() {
+        viewModel.addStudent("1", "Jan", "Kowalski")
+        configureThreeTasks()
+        viewModel.selectStation(1)
+    }
+
+    private fun configureThreeTasks() {
+        viewModel.setTotalTasks("3")
+        viewModel.updateThreshold(0, requiredTasks = "1", grade = "3.0")
+        viewModel.addThreshold()
+        viewModel.updateThreshold(1, requiredTasks = "2", grade = "4.0")
+        viewModel.addThreshold()
+        viewModel.updateThreshold(2, requiredTasks = "3", grade = "5.0")
+        val result = viewModel.saveGradingConfiguration()
+        assertTrue(result is ValidationResult.Success)
+    }
 }
