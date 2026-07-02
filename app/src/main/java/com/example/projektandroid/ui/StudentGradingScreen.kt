@@ -44,7 +44,7 @@ fun StudentGradingScreen(viewModel: AttendanceViewModel) {
             Text("Wróć do stanowisk")
         }
         Text(
-            text = "Stanowisko ${stationNumber ?: "-"}",
+            text = "Stanowisko nr ${stationNumber ?: "-"} - przypisani studenci:",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -100,19 +100,25 @@ private fun StudentGradingItem(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            taskNumbers.forEach { taskNumber ->
-                val isCompleted = student.wykonaneZadania.any {
-                    it.numerZadania == taskNumber
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = isCompleted,
-                        onCheckedChange = { onTaskToggle(taskNumber) }
-                    )
-                    Text("Zadanie $taskNumber")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                taskNumbers.forEach { taskNumber ->
+                    val isCompleted = student.wykonaneZadania.any {
+                        it.numerZadania == taskNumber
+                    }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(end = 4.dp)
+                    ) {
+                        Text(text = "Z$taskNumber", style = MaterialTheme.typography.labelSmall)
+                        Checkbox(
+                            checked = isCompleted,
+                            onCheckedChange = { onTaskToggle(taskNumber) }
+                        )
+                    }
                 }
             }
 

@@ -277,6 +277,33 @@ class AttendanceViewModelTest {
         assertTrue(viewModel.selectedStationStudents.value.isEmpty())
     }
 
+    @Test
+    fun `toggleStudentTask maintains isolation between students at same station`() {
+        // Add two students to the same station
+        viewModel.addStudent("1", "Jan", "Kowalski")
+        viewModel.addStudent("1", "Anna", "Nowak")
+        configureThreeTasks()
+        viewModel.selectStation(1)
+
+        val janId = viewModel.selectedStationStudents.value.first { it.imie == "Jan" }.id.toInt()
+        val annaId = viewModel.selectedStationStudents.value.first { it.imie == "Anna" }.id.toInt()
+
+        // Toggle task for Jan
+        viewModel.toggleStudentTask(studentId = janId, taskNumber = 1)
+
+        // Verify Jan has the task
+        assertTrue(
+            viewModel.selectedStationStudents.value.first { it.id.toInt() == janId }
+                .wykonaneZadania.any { it.numerZadania == 1 }
+        )
+
+        // Verify Anna does NOT have the task
+        assertTrue(
+            viewModel.selectedStationStudents.value.first { it.id.toInt() == annaId }
+                .wykonaneZadania.isEmpty()
+        )
+    }
+
     private fun prepareStudentForGrading() {
         viewModel.addStudent("1", "Jan", "Kowalski")
         configureThreeTasks()

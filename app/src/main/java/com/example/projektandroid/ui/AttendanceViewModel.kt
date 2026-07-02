@@ -194,7 +194,7 @@ class AttendanceViewModel(
 
     fun selectStation(stationNumber: Int): ValidationResult {
         if (stationNumber !in MIN_STATION..MAX_STATION) {
-            return ValidationResult.Error("Numer stanowiska musi byc w zakresie 1-10.")
+            return ValidationResult.Error("Numer stanowiska musi być w zakresie 1-10.")
         }
 
         _selectedStationNumber.value = stationNumber
