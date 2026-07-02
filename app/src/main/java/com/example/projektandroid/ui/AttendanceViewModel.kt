@@ -102,8 +102,18 @@ class AttendanceViewModel(
     }
 
     fun setTotalTasks(value: String) {
-        updateGradingState {
-            it.copy(totalTasks = value)
+        val total = value.toIntOrNull()
+        updateGradingState { state ->
+            val newThresholds = if (total != null && total > 0) {
+                // Generuj nowe progi lub zachowaj istniejące oceny jeśli to możliwe
+                (1..total).map { taskCount ->
+                    val existing = state.thresholds.find { it.requiredTasks == taskCount.toString() }
+                    existing ?: GradingThresholdInput(requiredTasks = taskCount.toString())
+                }
+            } else {
+                emptyList()
+            }
+            state.copy(totalTasks = value, thresholds = newThresholds)
         }
     }
 

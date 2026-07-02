@@ -114,15 +114,36 @@ class AttendanceViewModelTest {
     }
 
     @Test
+    fun `setTotalTasks generates correct number of thresholds`() {
+        viewModel.setTotalTasks("4")
+        
+        val state = viewModel.gradingConfiguration.value
+        assertEquals("4", state.totalTasks)
+        assertEquals(4, state.thresholds.size)
+        assertEquals("1", state.thresholds[0].requiredTasks)
+        assertEquals("4", state.thresholds[3].requiredTasks)
+    }
+
+    @Test
+    fun `setTotalTasks preserves existing grades when resizing`() {
+        viewModel.setTotalTasks("2")
+        viewModel.updateThreshold(0, grade = "3.5")
+        
+        viewModel.setTotalTasks("3")
+        val state = viewModel.gradingConfiguration.value
+        assertEquals(3, state.thresholds.size)
+        assertEquals("3.5", state.thresholds[0].grade)
+        assertEquals("", state.thresholds[2].grade)
+    }
+
+    @Test
     fun `saveGradingConfiguration stores valid thresholds`() {
         val configurator = GradeConfigurator()
         viewModel = AttendanceViewModel(repository, configurator)
         viewModel.setTotalTasks("3")
-        viewModel.updateThreshold(0, requiredTasks = "1", grade = "3.0")
-        viewModel.addThreshold()
-        viewModel.updateThreshold(1, requiredTasks = "2", grade = "4.0")
-        viewModel.addThreshold()
-        viewModel.updateThreshold(2, requiredTasks = "3", grade = "5.0")
+        viewModel.updateThreshold(0, grade = "3.0")
+        viewModel.updateThreshold(1, grade = "4.0")
+        viewModel.updateThreshold(2, grade = "5.0")
 
         val result = viewModel.saveGradingConfiguration()
 
@@ -264,11 +285,9 @@ class AttendanceViewModelTest {
 
     private fun configureThreeTasks() {
         viewModel.setTotalTasks("3")
-        viewModel.updateThreshold(0, requiredTasks = "1", grade = "3.0")
-        viewModel.addThreshold()
-        viewModel.updateThreshold(1, requiredTasks = "2", grade = "4.0")
-        viewModel.addThreshold()
-        viewModel.updateThreshold(2, requiredTasks = "3", grade = "5.0")
+        viewModel.updateThreshold(0, grade = "3.0")
+        viewModel.updateThreshold(1, grade = "4.0")
+        viewModel.updateThreshold(2, grade = "5.0")
         val result = viewModel.saveGradingConfiguration()
         assertTrue(result is ValidationResult.Success)
     }

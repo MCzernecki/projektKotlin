@@ -48,72 +48,39 @@ fun TaskConfigurationScreen(viewModel: AttendanceViewModel) {
                 .padding(bottom = 16.dp)
         )
 
-        Text(
-            text = "Progi oceniania",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        if (configuration.thresholds.isNotEmpty()) {
+            Text(
+                text = "Progi oceniania",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
 
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            itemsIndexed(configuration.thresholds) { index, threshold ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = "Próg ${index + 1}",
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = threshold.requiredTasks,
-                                onValueChange = {
-                                    viewModel.updateThreshold(index, requiredTasks = it)
-                                },
-                                label = { Text("Min. zadań") },
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Number
-                                ),
-                                singleLine = true,
-                                modifier = Modifier.weight(1f)
-                            )
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                itemsIndexed(configuration.thresholds) { index, threshold ->
+                    val taskCount = index + 1
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(12.dp)) {
                             OutlinedTextField(
                                 value = threshold.grade,
                                 onValueChange = {
                                     viewModel.updateThreshold(index, grade = it)
                                 },
-                                label = { Text("Ocena") },
+                                label = { Text(getLabelForTaskCount(taskCount)) },
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Decimal
                                 ),
                                 singleLine = true,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.fillMaxWidth()
                             )
-                        }
-                        TextButton(
-                            onClick = { viewModel.removeThreshold(index) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Usuń próg")
                         }
                     }
                 }
             }
-        }
-
-        Button(
-            onClick = viewModel::addThreshold,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)
-        ) {
-            Text("Dodaj próg")
         }
 
         configuration.errorMessage?.let {
@@ -138,9 +105,18 @@ fun TaskConfigurationScreen(viewModel: AttendanceViewModel) {
             onClick = viewModel::saveGradingConfiguration,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
+                .padding(top = 12.dp),
+            enabled = configuration.totalTasks.isNotBlank() && configuration.thresholds.isNotEmpty()
         ) {
             Text("Zapisz konfigurację")
         }
+    }
+}
+
+private fun getLabelForTaskCount(count: Int): String {
+    return when {
+        count == 1 -> "Ocena za $count zadanie"
+        count in 2..4 -> "Ocena za $count zadania"
+        else -> "Ocena za $count zadań"
     }
 }
