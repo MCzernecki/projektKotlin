@@ -47,7 +47,7 @@ class ListaObecnosciRepository {
 
         val ocenaKoncowa = student.ocenaKoncowa
         if (ocenaKoncowa != null) {
-            val ocenaValidationResult = validateOcena(ocenaKoncowa)
+            val ocenaValidationResult = validateOceneKoncowa(ocenaKoncowa)
             if (!ocenaValidationResult.isValid) {
                 return ocenaValidationResult
             }
@@ -110,8 +110,8 @@ class ListaObecnosciRepository {
         }
     }
 
-    fun ustawOceneKoncowa(studentId: Long, ocenaKoncowa: Int): ValidationResult {
-        val validationResult = validateOcena(ocenaKoncowa)
+    fun ustawOceneKoncowa(studentId: Long, ocenaKoncowa: Double): ValidationResult {
+        val validationResult = validateOceneKoncowa(ocenaKoncowa)
         if (!validationResult.isValid) {
             return validationResult
         }
@@ -220,6 +220,14 @@ class ListaObecnosciRepository {
             ValidationResult.Success
         } else {
             ValidationResult.Error("Ocena musi byc w zakresie 2-5.")
+        }
+    }
+
+    private fun validateOceneKoncowa(ocena: Double): ValidationResult {
+        return if (ocena in MIN_OCENA.toDouble()..MAX_OCENA.toDouble()) {
+            ValidationResult.Success
+        } else {
+            ValidationResult.Error("Ocena koncowa musi byc w zakresie 2.0-5.0.")
         }
     }
 

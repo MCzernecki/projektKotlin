@@ -63,13 +63,13 @@ class ListaObecnosciRepositoryTest {
         )
 
         val zadaniaResult = repository.przypiszWykonaneZadania(studentId = 1L, zadania)
-        val ocenaResult = repository.ustawOceneKoncowa(studentId = 1L, ocenaKoncowa = 5)
+        val ocenaResult = repository.ustawOceneKoncowa(studentId = 1L, ocenaKoncowa = 4.5)
         val student = repository.pobierzWszystkichStudentow().first()
 
         assertTrue(zadaniaResult is ValidationResult.Success)
         assertTrue(ocenaResult is ValidationResult.Success)
         assertEquals(2, student.wykonaneZadania.size)
-        assertEquals(5, student.ocenaKoncowa)
+        assertEquals(4.5, student.ocenaKoncowa!!, 0.0)
     }
 
     @Test

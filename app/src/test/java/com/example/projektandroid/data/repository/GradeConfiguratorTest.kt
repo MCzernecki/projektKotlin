@@ -43,6 +43,42 @@ class GradeConfiguratorTest {
     }
 
     @Test
+    fun setConfiguration_withNegativeRequiredTasks_returnsError() {
+        val configurator = GradeConfigurator()
+
+        val result = configurator.setConfiguration(
+            totalTasks = 3,
+            rules = listOf(GradingThreshold(-1, 3.0))
+        )
+
+        assertTrue(result is ValidationResult.Error)
+    }
+
+    @Test
+    fun setConfiguration_withDuplicatedRequiredTasks_returnsError() {
+        val configurator = GradeConfigurator()
+        val rules = listOf(
+            GradingThreshold(1, 3.0),
+            GradingThreshold(1, 4.0)
+        )
+
+        val result = configurator.setConfiguration(3, rules)
+
+        assertTrue(result is ValidationResult.Error)
+        assertEquals(0, configurator.getTotalTasks())
+        assertTrue(configurator.getThresholds().isEmpty())
+    }
+
+    @Test
+    fun setConfiguration_withoutThresholds_returnsError() {
+        val configurator = GradeConfigurator()
+
+        val result = configurator.setConfiguration(3, emptyList())
+
+        assertTrue(result is ValidationResult.Error)
+    }
+
+    @Test
     fun getSuggestedGrade_calculatesCorrectGrades() {
         val configurator = GradeConfigurator()
         val rules = listOf(

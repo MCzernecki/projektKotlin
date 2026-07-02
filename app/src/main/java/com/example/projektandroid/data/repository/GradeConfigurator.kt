@@ -20,6 +20,22 @@ class GradeConfigurator {
             return ValidationResult.Error("Total number of tasks must be greater than 0.")
         }
 
+        if (rules.isEmpty()) {
+            return ValidationResult.Error("At least one grading threshold is required.")
+        }
+
+        val duplicatedTaskCount = rules
+            .groupingBy { it.requiredTasks }
+            .eachCount()
+            .entries
+            .firstOrNull { it.value > 1 }
+            ?.key
+        if (duplicatedTaskCount != null) {
+            return ValidationResult.Error(
+                "Required tasks count $duplicatedTaskCount is used by more than one threshold."
+            )
+        }
+
         for (rule in rules) {
             if (rule.requiredTasks < 0) {
                 return ValidationResult.Error("Required tasks count cannot be negative.")
@@ -27,7 +43,7 @@ class GradeConfigurator {
             if (rule.requiredTasks > totalTasks) {
                 return ValidationResult.Error("Required tasks (${rule.requiredTasks}) cannot exceed total tasks ($totalTasks).")
             }
-            if (rule.grade < 2.0 || rule.grade > 5.0) {
+            if (rule.grade !in 2.0..5.0) {
                 return ValidationResult.Error("Grade must be between 2.0 and 5.0.")
             }
         }

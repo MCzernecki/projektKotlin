@@ -6,5 +6,5 @@ data class Student(
     val imie: String,
     val nazwisko: String,
     val wykonaneZadania: List<ZadanieLaboratoryjne> = emptyList(),
-    val ocenaKoncowa: Int? = null
+    val ocenaKoncowa: Double? = null
 )
