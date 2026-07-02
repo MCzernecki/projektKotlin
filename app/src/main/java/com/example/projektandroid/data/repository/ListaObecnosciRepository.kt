@@ -184,15 +184,15 @@ class ListaObecnosciRepository {
         nazwisko: String
     ): ValidationResult {
         if (numerStanowiska !in MIN_STANOWISKO..MAX_STANOWISKO) {
-            return ValidationResult.Error("Numer stanowiska musi byc w zakresie 1-10.")
+            return ValidationResult.Error("Numer stanowiska musi być w zakresie 1-10.")
         }
 
         if (imie.isBlank()) {
-            return ValidationResult.Error("Imie nie moze byc puste.")
+            return ValidationResult.Error("Imię nie może być puste.")
         }
 
         if (nazwisko.isBlank()) {
-            return ValidationResult.Error("Nazwisko nie moze byc puste.")
+            return ValidationResult.Error("Nazwisko nie może być puste.")
         }
 
         return ValidationResult.Success
@@ -200,12 +200,12 @@ class ListaObecnosciRepository {
 
     private fun validateZadania(zadania: List<ZadanieLaboratoryjne>): ValidationResult {
         if (zadania.isEmpty()) {
-            return ValidationResult.Error("Lista zadan musi zawierac co najmniej jedno zadanie.")
+            return ValidationResult.Error("Lista zadań musi zawierać co najmniej jedno zadanie.")
         }
 
         zadania.forEach { zadanie ->
             if (zadanie.numerZadania <= 0) {
-                return ValidationResult.Error("Numer zadania musi byc wiekszy od 0.")
+                return ValidationResult.Error("Numer zadania musi być większy od 0.")
             }
 
             val ocenaValidationResult = validateOcena(zadanie.ocena)
@@ -221,7 +221,7 @@ class ListaObecnosciRepository {
         return if (ocena in MIN_OCENA..MAX_OCENA) {
             ValidationResult.Success
         } else {
-            ValidationResult.Error("Ocena musi byc w zakresie 2-5.")
+            ValidationResult.Error("Ocena musi być w zakresie 2-5.")
         }
     }
 
@@ -229,7 +229,7 @@ class ListaObecnosciRepository {
         return if (ocena in MIN_OCENA.toDouble()..MAX_OCENA.toDouble()) {
             ValidationResult.Success
         } else {
-            ValidationResult.Error("Ocena koncowa musi byc w zakresie 2.0-5.0.")
+            ValidationResult.Error("Ocena końcowa musi być w zakresie 2.0-5.0.")
         }
     }
 

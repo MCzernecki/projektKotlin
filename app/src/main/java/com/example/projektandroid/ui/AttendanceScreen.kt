@@ -53,27 +53,69 @@ fun AttendanceScreen(viewModel: AttendanceViewModel) {
                 .padding(bottom = 16.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
+                val isStationError = formError?.contains("stanowiska", ignoreCase = true) == true
+                val isNameError = formError?.contains("imię", ignoreCase = true) == true
+                val isSurnameError = formError?.contains("nazwisko", ignoreCase = true) == true
+
                 OutlinedTextField(
                     value = numerStanowiska,
-                    onValueChange = { numerStanowiska = it },
+                    onValueChange = { 
+                        numerStanowiska = it
+                        if (isStationError) formError = null
+                    },
                     label = { Text("Stanowisko (1-10)") },
+                    isError = isStationError,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (isStationError) {
+                    Text(
+                        text = formError ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                    )
+                }
+
                 OutlinedTextField(
                     value = imie,
-                    onValueChange = { imie = it },
+                    onValueChange = { 
+                        imie = it
+                        if (isNameError) formError = null
+                    },
                     label = { Text("Imię") },
+                    isError = isNameError,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (isNameError) {
+                    Text(
+                        text = formError ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                    )
+                }
+
                 OutlinedTextField(
                     value = nazwisko,
-                    onValueChange = { nazwisko = it },
+                    onValueChange = { 
+                        nazwisko = it
+                        if (isSurnameError) formError = null
+                    },
                     label = { Text("Nazwisko") },
+                    isError = isSurnameError,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (isSurnameError) {
+                    Text(
+                        text = formError ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                    )
+                }
 
                 Button(
                     onClick = {
@@ -98,9 +140,9 @@ fun AttendanceScreen(viewModel: AttendanceViewModel) {
                     Text("Dodaj")
                 }
 
-                formError?.let {
+                if (formError != null && !isStationError && !isNameError && !isSurnameError) {
                     Text(
-                        text = it,
+                        text = formError ?: "",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )

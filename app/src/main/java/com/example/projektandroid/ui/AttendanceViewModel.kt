@@ -52,8 +52,31 @@ class AttendanceViewModel(
     }
 
     fun addStudent(numerStanowiska: String, imie: String, nazwisko: String): ValidationResult {
+        if (numerStanowiska.isBlank()) {
+            return ValidationResult.Error("Numer stanowiska nie może być pusty.")
+        }
         val stanowisko = numerStanowiska.toIntOrNull()
-            ?: return ValidationResult.Error("Numer stanowiska musi byc liczba.")
+            ?: return ValidationResult.Error("Numer stanowiska musi być liczbą.")
+
+        if (imie.isBlank()) {
+            return ValidationResult.Error("Imię nie może być puste.")
+        }
+        if (imie.trim().length < 2) {
+            return ValidationResult.Error("Imię musi mieć co najmniej 2 znaki.")
+        }
+        if (imie.any { it.isDigit() }) {
+            return ValidationResult.Error("Imię nie może zawierać cyfr.")
+        }
+
+        if (nazwisko.isBlank()) {
+            return ValidationResult.Error("Nazwisko nie może być puste.")
+        }
+        if (nazwisko.trim().length < 2) {
+            return ValidationResult.Error("Nazwisko musi mieć co najmniej 2 znaki.")
+        }
+        if (nazwisko.any { it.isDigit() }) {
+            return ValidationResult.Error("Nazwisko nie może zawierać cyfr.")
+        }
 
         val result = repository.dodajStudenta(stanowisko, imie, nazwisko)
         if (result is ValidationResult.Success) {

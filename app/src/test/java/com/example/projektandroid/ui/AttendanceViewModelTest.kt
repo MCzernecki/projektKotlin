@@ -54,7 +54,32 @@ class AttendanceViewModelTest {
         val result = viewModel.addStudent("abc", "Jan", "Kowalski")
         
         assertTrue(result is ValidationResult.Error)
+        assertEquals("Numer stanowiska musi być liczbą.", (result as ValidationResult.Error).message)
         assertEquals(0, viewModel.studentsList.value.size)
+    }
+
+    @Test
+    fun `addStudent returns error for short name`() = runTest {
+        val result = viewModel.addStudent("1", "J", "Kowalski")
+        
+        assertTrue(result is ValidationResult.Error)
+        assertEquals("Imię musi mieć co najmniej 2 znaki.", (result as ValidationResult.Error).message)
+    }
+
+    @Test
+    fun `addStudent returns error for name with digits`() = runTest {
+        val result = viewModel.addStudent("1", "Jan2", "Kowalski")
+        
+        assertTrue(result is ValidationResult.Error)
+        assertEquals("Imię nie może zawierać cyfr.", (result as ValidationResult.Error).message)
+    }
+
+    @Test
+    fun `addStudent returns error for empty surname`() = runTest {
+        val result = viewModel.addStudent("1", "Jan", "")
+        
+        assertTrue(result is ValidationResult.Error)
+        assertEquals("Nazwisko nie może być puste.", (result as ValidationResult.Error).message)
     }
 
     @Test
@@ -63,6 +88,7 @@ class AttendanceViewModelTest {
         val result = viewModel.addStudent("11", "Jan", "Kowalski")
         
         assertTrue(result is ValidationResult.Error)
+        assertEquals("Numer stanowiska musi być w zakresie 1-10.", (result as ValidationResult.Error).message)
         assertEquals(0, viewModel.studentsList.value.size)
     }
 
