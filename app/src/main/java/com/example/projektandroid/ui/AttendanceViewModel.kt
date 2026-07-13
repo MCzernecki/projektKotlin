@@ -1,5 +1,9 @@
 package com.example.projektandroid.ui
 
+import android.content.Context
+import com.example.projektandroid.data.export.CsvExporter
+import com.example.projektandroid.data.export.CsvFileWriter
+import com.example.projektandroid.data.export.CsvWriteResult
 import androidx.lifecycle.ViewModel
 import com.example.projektandroid.data.model.GradingThreshold
 import com.example.projektandroid.data.model.Student
@@ -13,7 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class AttendanceViewModel(
     private val repository: ListaObecnosciRepository = ListaObecnosciRepository(),
-    private val gradeConfigurator: GradeConfigurator = GradeConfigurator()
+    private val gradeConfigurator: GradeConfigurator = GradeConfigurator(),
+    private val csvExporter: CsvExporter = CsvExporter(),
+    private val csvFileWriter: CsvFileWriter = CsvFileWriter()
 ) : ViewModel() {
 
     private val _studentsList = MutableStateFlow<List<Student>>(emptyList())
@@ -46,6 +52,9 @@ class AttendanceViewModel(
 
     private val _gradingMessages = MutableStateFlow<Map<Long, String>>(emptyMap())
     val gradingMessages: StateFlow<Map<Long, String>> = _gradingMessages.asStateFlow()
+
+    private val _csvExportMessage = MutableStateFlow<String?>(null)
+    val csvExportMessage: StateFlow<String?> = _csvExportMessage.asStateFlow()
 
     init {
         refreshList()
@@ -243,6 +252,36 @@ class AttendanceViewModel(
         _selectedStationStudents.value = emptyList()
         _gradingMessages.value = emptyMap()
         _currentStep.value = AppStep.STATION_SELECTION
+    }
+
+    fun exportToCsv(context: Context): ValidationResult {
+        val students = repository.pobierzWszystkichStudentow()
+        if (students.isEmpty()) {
+            val result = ValidationResult.Error("Nie można zapisać CSV bez studentów.")
+            _csvExportMessage.value = result.message
+            return result
+        }
+
+        val tasks = repository.pobierzListeZadan()
+        if (tasks.isEmpty()) {
+            val result = ValidationResult.Error("Nie można zapisać CSV bez skonfigurowanych zadań.")
+            _csvExportMessage.value = result.message
+            return result
+        }
+
+        val fileName = csvExporter.generateFileName()
+        val csvContent = csvExporter.generateCsv(students = students, tasks = tasks)
+        return when (csvFileWriter.write(context, fileName, csvContent)) {
+            is CsvWriteResult.Success -> {
+                _csvExportMessage.value = "Plik został zapisany: $fileName"
+                ValidationResult.Success
+            }
+            is CsvWriteResult.Error -> {
+                val result = ValidationResult.Error("Nie udało się zapisać pliku.")
+                _csvExportMessage.value = result.message
+                result
+            }
+        }
     }
 
     private fun refreshList() {

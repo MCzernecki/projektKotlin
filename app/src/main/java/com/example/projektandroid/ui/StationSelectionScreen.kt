@@ -17,12 +17,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun StationSelectionScreen(viewModel: AttendanceViewModel) {
+    val context = LocalContext.current
     val students by viewModel.studentsList.collectAsState()
+    val csvExportMessage by viewModel.csvExportMessage.collectAsState()
     val stations = (1..10).toList()
 
     Column(
@@ -38,7 +41,9 @@ fun StationSelectionScreen(viewModel: AttendanceViewModel) {
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -65,6 +70,28 @@ fun StationSelectionScreen(viewModel: AttendanceViewModel) {
                     }
                 }
             }
+        }
+
+        Button(
+            onClick = { viewModel.exportToCsv(context) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+        ) {
+            Text("Zapisz listę do CSV")
+        }
+
+        csvExportMessage?.let { message ->
+            Text(
+                text = message,
+                color = if (message.startsWith("Nie")) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }
