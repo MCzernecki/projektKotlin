@@ -154,13 +154,13 @@ class AttendanceViewModelTest {
     }
 
     @Test
-    fun `saveGradingConfiguration rejects duplicated thresholds`() {
+    fun `saveGradingConfiguration rejects invalid generated threshold grade`() {
         val configurator = GradeConfigurator()
         viewModel = AttendanceViewModel(repository, configurator)
         viewModel.setTotalTasks("3")
-        viewModel.updateThreshold(0, requiredTasks = "1", grade = "3.0")
-        viewModel.addThreshold()
-        viewModel.updateThreshold(1, requiredTasks = "1", grade = "4.0")
+        viewModel.updateThreshold(0, grade = "3.0")
+        viewModel.updateThreshold(1, grade = "6.0")
+        viewModel.updateThreshold(2, grade = "5.0")
 
         val result = viewModel.saveGradingConfiguration()
 
@@ -198,7 +198,7 @@ class AttendanceViewModelTest {
     fun `toggleStudentTask adds completed task`() {
         prepareStudentForGrading()
 
-        val result = viewModel.toggleStudentTask(studentId = 1, taskNumber = 1)
+        val result = viewModel.toggleStudentTask(studentId = 1L, taskNumber = 1)
 
         assertTrue(result is ValidationResult.Success)
         assertEquals(
@@ -211,9 +211,9 @@ class AttendanceViewModelTest {
     @Test
     fun `toggleStudentTask removes task after second toggle`() {
         prepareStudentForGrading()
-        viewModel.toggleStudentTask(studentId = 1, taskNumber = 1)
+        viewModel.toggleStudentTask(studentId = 1L, taskNumber = 1)
 
-        val result = viewModel.toggleStudentTask(studentId = 1, taskNumber = 1)
+        val result = viewModel.toggleStudentTask(studentId = 1L, taskNumber = 1)
 
         assertTrue(result is ValidationResult.Success)
         assertTrue(
@@ -224,13 +224,13 @@ class AttendanceViewModelTest {
     @Test
     fun `suggested grade changes when tasks are toggled`() {
         prepareStudentForGrading()
-        assertEquals(2.0, viewModel.getSuggestedGrade(1), 0.0)
+        assertEquals(2.0, viewModel.getSuggestedGrade(1L), 0.0)
 
-        viewModel.toggleStudentTask(studentId = 1, taskNumber = 1)
-        assertEquals(3.0, viewModel.getSuggestedGrade(1), 0.0)
+        viewModel.toggleStudentTask(studentId = 1L, taskNumber = 1)
+        assertEquals(3.0, viewModel.getSuggestedGrade(1L), 0.0)
 
-        viewModel.toggleStudentTask(studentId = 1, taskNumber = 2)
-        assertEquals(4.0, viewModel.getSuggestedGrade(1), 0.0)
+        viewModel.toggleStudentTask(studentId = 1L, taskNumber = 2)
+        assertEquals(4.0, viewModel.getSuggestedGrade(1L), 0.0)
         assertEquals(
             null,
             viewModel.selectedStationStudents.value.first().ocenaKoncowa
@@ -241,7 +241,7 @@ class AttendanceViewModelTest {
     fun `saveStudentGrade stores valid grade`() {
         prepareStudentForGrading()
 
-        val result = viewModel.saveStudentGrade(studentId = 1, grade = 4.5)
+        val result = viewModel.saveStudentGrade(studentId = 1L, grade = 4.5)
 
         assertTrue(result is ValidationResult.Success)
         assertEquals(
@@ -256,7 +256,7 @@ class AttendanceViewModelTest {
     fun `saveStudentGrade rejects grade outside allowed range`() {
         prepareStudentForGrading()
 
-        val result = viewModel.saveStudentGrade(studentId = 1, grade = 5.5)
+        val result = viewModel.saveStudentGrade(studentId = 1L, grade = 5.5)
 
         assertTrue(result is ValidationResult.Error)
         assertEquals(
@@ -285,21 +285,21 @@ class AttendanceViewModelTest {
         configureThreeTasks()
         viewModel.selectStation(1)
 
-        val janId = viewModel.selectedStationStudents.value.first { it.imie == "Jan" }.id.toInt()
-        val annaId = viewModel.selectedStationStudents.value.first { it.imie == "Anna" }.id.toInt()
+        val janId = viewModel.selectedStationStudents.value.first { it.imie == "Jan" }.id
+        val annaId = viewModel.selectedStationStudents.value.first { it.imie == "Anna" }.id
 
         // Toggle task for Jan
         viewModel.toggleStudentTask(studentId = janId, taskNumber = 1)
 
         // Verify Jan has the task
         assertTrue(
-            viewModel.selectedStationStudents.value.first { it.id.toInt() == janId }
+            viewModel.selectedStationStudents.value.first { it.id == janId }
                 .wykonaneZadania.any { it.numerZadania == 1 }
         )
 
         // Verify Anna does NOT have the task
         assertTrue(
-            viewModel.selectedStationStudents.value.first { it.id.toInt() == annaId }
+            viewModel.selectedStationStudents.value.first { it.id == annaId }
                 .wykonaneZadania.isEmpty()
         )
     }

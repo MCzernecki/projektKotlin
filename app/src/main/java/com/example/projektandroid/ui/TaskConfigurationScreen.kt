@@ -2,7 +2,6 @@ package com.example.projektandroid.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,7 +13,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,7 +30,7 @@ fun TaskConfigurationScreen(viewModel: AttendanceViewModel) {
             .padding(16.dp)
     ) {
         Text(
-            text = "Konfiguracja zadań i ocen",
+            text = "Oceny za wykonane zadania",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -50,7 +48,7 @@ fun TaskConfigurationScreen(viewModel: AttendanceViewModel) {
 
         if (configuration.thresholds.isNotEmpty()) {
             Text(
-                text = "Progi oceniania",
+                text = "Automatyczne oceny za liczbę wykonanych zadań",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -94,7 +92,7 @@ fun TaskConfigurationScreen(viewModel: AttendanceViewModel) {
 
         if (configuration.isSaved) {
             Text(
-                text = "Konfiguracja została zapisana.",
+                text = "Oceny za wykonane zadania zostały zapisane.",
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 8.dp)
@@ -108,15 +106,15 @@ fun TaskConfigurationScreen(viewModel: AttendanceViewModel) {
                 .padding(top = 12.dp),
             enabled = configuration.totalTasks.isNotBlank() && configuration.thresholds.isNotEmpty()
         ) {
-            Text("Zapisz konfigurację")
+            Text("Zapisz oceny")
         }
     }
 }
 
 private fun getLabelForTaskCount(count: Int): String {
     return when {
-        count == 1 -> "Ocena za $count zadanie"
-        count in 2..4 -> "Ocena za $count zadania"
-        else -> "Ocena za $count zadań"
+        count == 1 -> "Ocena za $count wykonane zadanie"
+        count in 2..4 -> "Ocena za $count wykonane zadania"
+        else -> "Ocena za $count wykonanych zadań"
     }
 }

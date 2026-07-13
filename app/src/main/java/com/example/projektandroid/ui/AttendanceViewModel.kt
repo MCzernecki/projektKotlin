@@ -105,7 +105,7 @@ class AttendanceViewModel(
         val total = value.toIntOrNull()
         updateGradingState { state ->
             val newThresholds = if (total != null && total > 0) {
-                // Generuj nowe progi lub zachowaj istniejące oceny jeśli to możliwe
+                // Thresholds are generated automatically for completed task counts from 1 to N.
                 (1..total).map { taskCount ->
                     val existing = state.thresholds.find { it.requiredTasks == taskCount.toString() }
                     existing ?: GradingThresholdInput(requiredTasks = taskCount.toString())
@@ -117,36 +117,18 @@ class AttendanceViewModel(
         }
     }
 
-    fun addThreshold() {
-        updateGradingState {
-            it.copy(thresholds = it.thresholds + GradingThresholdInput())
-        }
-    }
-
-    fun updateThreshold(index: Int, requiredTasks: String? = null, grade: String? = null) {
+    fun updateThreshold(index: Int, grade: String) {
         val currentState = _gradingConfiguration.value
         if (index !in currentState.thresholds.indices) return
 
         val updatedThresholds = currentState.thresholds.mapIndexed { thresholdIndex, threshold ->
             if (thresholdIndex == index) {
-                threshold.copy(
-                    requiredTasks = requiredTasks ?: threshold.requiredTasks,
-                    grade = grade ?: threshold.grade
-                )
+                threshold.copy(grade = grade)
             } else {
                 threshold
             }
         }
         updateGradingState { it.copy(thresholds = updatedThresholds) }
-    }
-
-    fun removeThreshold(index: Int) {
-        val currentState = _gradingConfiguration.value
-        if (index !in currentState.thresholds.indices) return
-
-        updateGradingState {
-            it.copy(thresholds = it.thresholds.filterIndexed { i, _ -> i != index })
-        }
     }
 
     fun saveGradingConfiguration(): ValidationResult {
@@ -204,13 +186,13 @@ class AttendanceViewModel(
         return ValidationResult.Success
     }
 
-    fun toggleStudentTask(studentId: Int, taskNumber: Int): ValidationResult {
+    fun toggleStudentTask(studentId: Long, taskNumber: Int): ValidationResult {
         if (taskNumber !in _configuredTaskNumbers.value) {
             return ValidationResult.Error("Nie znaleziono zadania o numerze $taskNumber.")
         }
 
         val student = repository.pobierzWszystkichStudentow()
-            .firstOrNull { it.id == studentId.toLong() }
+            .firstOrNull { it.id == studentId }
             ?: return ValidationResult.Error("Nie znaleziono studenta o id: $studentId.")
         val configuredTask = repository.pobierzListeZadan()
             .first { it.numerZadania == taskNumber }
@@ -230,28 +212,28 @@ class AttendanceViewModel(
         return result
     }
 
-    fun getSuggestedGrade(studentId: Int): Double {
+    fun getSuggestedGrade(studentId: Long): Double {
         val student = repository.pobierzWszystkichStudentow()
-            .firstOrNull { it.id == studentId.toLong() }
+            .firstOrNull { it.id == studentId }
             ?: return MIN_GRADE
         return gradeConfigurator.getSuggestedGrade(student.wykonaneZadania.size)
     }
 
-    fun saveStudentGrade(studentId: Int, grade: Double): ValidationResult {
+    fun saveStudentGrade(studentId: Long, grade: Double): ValidationResult {
         if (grade !in MIN_GRADE..MAX_GRADE) {
             val result = ValidationResult.Error("Ocena musi byc w zakresie 2.0-5.0.")
-            setGradingMessage(studentId.toLong(), result.message)
+            setGradingMessage(studentId, result.message)
             return result
         }
 
-        val result = repository.ustawOceneKoncowa(studentId.toLong(), grade)
+        val result = repository.ustawOceneKoncowa(studentId, grade)
         when (result) {
             ValidationResult.Success -> {
                 refreshList()
                 refreshSelectedStationStudents()
-                setGradingMessage(studentId.toLong(), "Ocena zostala zapisana.")
+                setGradingMessage(studentId, "Ocena zostala zapisana.")
             }
-            is ValidationResult.Error -> setGradingMessage(studentId.toLong(), result.message)
+            is ValidationResult.Error -> setGradingMessage(studentId, result.message)
         }
         return result
     }

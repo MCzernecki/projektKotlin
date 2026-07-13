@@ -63,13 +63,13 @@ fun StudentGradingScreen(viewModel: AttendanceViewModel) {
                     StudentGradingItem(
                         student = student,
                         taskNumbers = taskNumbers,
-                        suggestedGrade = viewModel.getSuggestedGrade(student.id.toInt()),
+                        suggestedGrade = viewModel.getSuggestedGrade(student.id),
                         message = messages[student.id],
                         onTaskToggle = { taskNumber ->
-                            viewModel.toggleStudentTask(student.id.toInt(), taskNumber)
+                            viewModel.toggleStudentTask(student.id, taskNumber)
                         },
                         onSaveGrade = { grade ->
-                            viewModel.saveStudentGrade(student.id.toInt(), grade)
+                            viewModel.saveStudentGrade(student.id, grade)
                         }
                     )
                 }
