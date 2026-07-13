@@ -1,9 +1,7 @@
 package com.example.projektandroid.ui
 
-import android.content.Context
 import com.example.projektandroid.data.export.CsvExporter
-import com.example.projektandroid.data.export.CsvFileWriter
-import com.example.projektandroid.data.export.CsvWriteResult
+import com.example.projektandroid.data.export.PreparedCsvExport
 import androidx.lifecycle.ViewModel
 import com.example.projektandroid.data.model.GradingThreshold
 import com.example.projektandroid.data.model.Student
@@ -18,8 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class AttendanceViewModel(
     private val repository: ListaObecnosciRepository = ListaObecnosciRepository(),
     private val gradeConfigurator: GradeConfigurator = GradeConfigurator(),
-    private val csvExporter: CsvExporter = CsvExporter(),
-    private val csvFileWriter: CsvFileWriter = CsvFileWriter()
+    private val csvExporter: CsvExporter = CsvExporter()
 ) : ViewModel() {
 
     private val _studentsList = MutableStateFlow<List<Student>>(emptyList())
@@ -55,6 +52,9 @@ class AttendanceViewModel(
 
     private val _csvExportMessage = MutableStateFlow<String?>(null)
     val csvExportMessage: StateFlow<String?> = _csvExportMessage.asStateFlow()
+
+    private val _pendingCsvExport = MutableStateFlow<PreparedCsvExport?>(null)
+    val pendingCsvExport: StateFlow<PreparedCsvExport?> = _pendingCsvExport.asStateFlow()
 
     init {
         refreshList()
@@ -254,11 +254,12 @@ class AttendanceViewModel(
         _currentStep.value = AppStep.STATION_SELECTION
     }
 
-    fun exportToCsv(context: Context): ValidationResult {
+    fun prepareCsvExport(): ValidationResult {
         val students = repository.pobierzWszystkichStudentow()
         if (students.isEmpty()) {
             val result = ValidationResult.Error("Nie można zapisać CSV bez studentów.")
             _csvExportMessage.value = result.message
+            _pendingCsvExport.value = null
             return result
         }
 
@@ -266,22 +267,47 @@ class AttendanceViewModel(
         if (tasks.isEmpty()) {
             val result = ValidationResult.Error("Nie można zapisać CSV bez skonfigurowanych zadań.")
             _csvExportMessage.value = result.message
+            _pendingCsvExport.value = null
             return result
         }
 
         val fileName = csvExporter.generateFileName()
         val csvContent = csvExporter.generateCsv(students = students, tasks = tasks)
-        return when (csvFileWriter.write(context, fileName, csvContent)) {
-            is CsvWriteResult.Success -> {
-                _csvExportMessage.value = "Plik został zapisany: $fileName"
-                ValidationResult.Success
-            }
-            is CsvWriteResult.Error -> {
-                val result = ValidationResult.Error("Nie udało się zapisać pliku.")
-                _csvExportMessage.value = result.message
-                result
-            }
-        }
+        _pendingCsvExport.value = PreparedCsvExport(fileName = fileName, content = csvContent)
+        _csvExportMessage.value = null
+        return ValidationResult.Success
+    }
+
+    fun confirmCsvExportSaved() {
+        _pendingCsvExport.value = null
+        _csvExportMessage.value = "Plik CSV został zapisany."
+    }
+
+    fun cancelCsvExport() {
+        _pendingCsvExport.value = null
+        _csvExportMessage.value = "Zapis anulowany."
+    }
+
+    fun reportCsvExportFailure() {
+        _pendingCsvExport.value = null
+        _csvExportMessage.value = "Nie udało się zapisać pliku CSV."
+    }
+
+    fun resetForNewClass() {
+        repository.wyczyscWszystkieDane()
+        gradeConfigurator.clearConfiguration()
+
+        _studentsList.value = emptyList()
+        _currentStep.value = AppStep.ATTENDANCE
+        _isAttendanceListGenerated.value = false
+        _attendanceError.value = null
+        _gradingConfiguration.value = GradingConfigurationState()
+        _selectedStationNumber.value = null
+        _selectedStationStudents.value = emptyList()
+        _configuredTaskNumbers.value = emptyList()
+        _gradingMessages.value = emptyMap()
+        _csvExportMessage.value = null
+        _pendingCsvExport.value = null
     }
 
     private fun refreshList() {

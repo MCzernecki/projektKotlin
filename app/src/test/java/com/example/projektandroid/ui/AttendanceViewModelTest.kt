@@ -304,6 +304,74 @@ class AttendanceViewModelTest {
         )
     }
 
+    @Test
+    fun `prepareCsvExport creates pending csv with generated content`() {
+        viewModel.addStudent("1", "Jan", "Kowalski")
+        configureThreeTasks()
+        viewModel.selectStation(1)
+        viewModel.toggleStudentTask(studentId = 1L, taskNumber = 1)
+        viewModel.saveStudentGrade(studentId = 1L, grade = 4.0)
+
+        val result = viewModel.prepareCsvExport()
+
+        assertTrue(result is ValidationResult.Success)
+        val export = viewModel.pendingCsvExport.value
+        assertTrue(export != null)
+        assertTrue(export!!.fileName.endsWith(".csv"))
+        assertEquals(
+            "stanowisko;imie;nazwisko;zadanie_1;zadanie_2;zadanie_3;ocena_koncowa\n" +
+                "1;Jan;Kowalski;tak;nie;nie;4.0",
+            export.content
+        )
+    }
+
+    @Test
+    fun `cancelCsvExport clears pending export and stores cancel message`() {
+        viewModel.cancelCsvExport()
+
+        assertEquals(null, viewModel.pendingCsvExport.value)
+        assertEquals("Zapis anulowany.", viewModel.csvExportMessage.value)
+    }
+
+    @Test
+    fun `resetForNewClass clears students tasks selected station and returns to attendance`() {
+        val configurator = GradeConfigurator()
+        viewModel = AttendanceViewModel(repository, configurator)
+        viewModel.addStudent("1", "Jan", "Kowalski")
+        configureThreeTasks()
+        viewModel.selectStation(1)
+        viewModel.toggleStudentTask(studentId = 1L, taskNumber = 1)
+        viewModel.saveStudentGrade(studentId = 1L, grade = 4.0)
+        viewModel.prepareCsvExport()
+
+        viewModel.resetForNewClass()
+
+        assertTrue(viewModel.studentsList.value.isEmpty())
+        assertTrue(repository.pobierzListeZadan().isEmpty())
+        assertEquals(0, configurator.getTotalTasks())
+        assertTrue(configurator.getThresholds().isEmpty())
+        assertEquals(null, viewModel.selectedStationNumber.value)
+        assertTrue(viewModel.selectedStationStudents.value.isEmpty())
+        assertTrue(viewModel.configuredTaskNumbers.value.isEmpty())
+        assertEquals(AppStep.ATTENDANCE, viewModel.currentStep.value)
+        assertEquals(null, viewModel.csvExportMessage.value)
+        assertEquals(null, viewModel.pendingCsvExport.value)
+    }
+
+    @Test
+    fun `can add student again after resetForNewClass`() {
+        viewModel.addStudent("1", "Jan", "Kowalski")
+        configureThreeTasks()
+
+        viewModel.resetForNewClass()
+        val result = viewModel.addStudent("2", "Anna", "Nowak")
+
+        assertTrue(result is ValidationResult.Success)
+        assertEquals(1, viewModel.studentsList.value.size)
+        assertEquals("Anna", viewModel.studentsList.value.first().imie)
+        assertEquals(2, viewModel.studentsList.value.first().numerStanowiska)
+    }
+
     private fun prepareStudentForGrading() {
         viewModel.addStudent("1", "Jan", "Kowalski")
         configureThreeTasks()
